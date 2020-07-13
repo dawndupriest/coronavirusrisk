@@ -1,0 +1,149 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+
+    <style>
+        body {
+            font-size: 1em;
+            font-family: Arial;
+            background: #E1E5E8;
+            color: #00264D;
+        }
+
+        #probabilitymessage {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <form>
+
+        <h1>Exploring Scenarios</h1>
+        <p>Use the form to enter different values for the average daily case load, population, R0 value, and undercount multiplier.</p>
+        <br />
+        <br />
+        What's the average number of daily cases? <input type="number" id="caseload" name="caseload" min="0" step="0.01" value="10.0" />
+        <br /><br />
+        What's the population of the region? <input type="number" id="population" name="population" min="0" step="1" value="100000" />
+        <br /><br />
+        How many people does the average contagious person infect (the R0 value)? <input type="number" id="r0value" name="r0value" min="0" step="0.01" value="1.0" />
+        <br /><br />
+        How many times higher is the actual number of cases than reported? (undercount multiplier) <input type="number" id="undercount" name="undercount" min="1" step="0.01" value="5" />
+        <br />(A value of 1 in this box means the reported number is correct. A value of 2 means the actual number of cases is 2x higher.)
+        <br /><br />
+        How many days is the average infected person contagious and presymptomatic? <input type="number" id="dayscontagious" name="dayscontagious" min="0" step="0.01" value="3.0" />
+        <br /><br />
+        How many people are in the room? <input type="number" id="people" name="people" min="1" value="20" onkeydown="if (event.keyCode == 13)  document.getElementById('submitbutton').click()" />
+        <input type="text" style="display: none;" />
+        <button type="button" id="submitbutton">Submit</button>
+        <br /><br />
+    </form>
+    
+    <div id="probabilitymessage"></div>
+
+    <div id="howitworks">
+    <h2>Notes about the assumptions</h2>
+        <p>Most research seems to indicate that people are most contagious in the 2 days before they start showing symptoms and then the day or
+        2 after they have started showing symptoms. I use an estimate of 3 days in most of my calculations. </p>
+        <p>The multiplier for how much cases are undercounted is the most difficult one to know. In this <a href="https://www.npr.org/sections/coronavirus-live-updates/2020/06/25/883520249/cdc-at-least-20-million-americans-have-had-coronavirus-heres-who-s-at-highest-ri">article</a>,
+        the CDC estimates we may be underreporting cases by a factor of 10. I use a factor of 5 in my calculations based on a couple of
+        key pieces of information: one is that the case fatality rate is generally accepted to be about 0.8% to 1% of all cases of Covid-19
+        resulting in death. If about 150,000 people in the US have died from Covid-19 (this is higher than the official toll because deaths
+        are undercounted), then if that's 1% of the total number of cases it means 15,000,000 people in the US have actually been infected -
+        about 5x more than the official count. Another piece of information comes from antibody tests from New York. In New York City, about
+        <a href="https://www.360dx.com/infectious-disease/new-york-california-serology-studies-give-early-estimates-covid-19-prevalence#.Xwp_QShKiUk">1.8% of the population tested positive for Covid-19 at one point</a>, 
+        but 14% of the population later tested positive for antibodies.
+        This is over 7 times higher than the official case count. That amount of undercounting seems shocking, but when cases surge,
+        it becomes increasingly difficult to get tested, and even when cases are not surging, we need to account for access to 
+        testing, the expense of getting tested, and the presence of mild or asymptomatic cases who never get tested.</p>
+        <p>You are welcome to play with these multipliers, but that's why I use the ones I use.</p>
+    </div>
+
+
+
+    <script>
+
+     
+        var contagiousdays;
+
+        
+        var countypop;
+        var R0;
+        var sizeofroom;
+        var undercountmultiplier;
+        var avgdailycases;
+
+
+
+        function CalculateRisk() {
+            
+            document.getElementById("probabilitymessage").innerHTML = "";
+            sizeofroom = document.getElementById("people").value;
+            if (sizeofroom < 1) {
+                document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "Cannot Calculate - invalid input - people in room";
+                return;
+            }
+
+            countypop = document.getElementById("population").value;
+            if (countypop <= 0) {
+                document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "Cannot Calculate - invalid input - population";
+                return;
+            }
+
+            R0 = document.getElementById("r0value").value;
+            if (R0 < 0) {
+                document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "Cannot Calculate - invalid input - R0";
+                return;
+            }
+
+            undercountmultiplier = document.getElementById("undercount").value;
+            if (undercountmultiplier < 1) {
+                document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "Cannot Calculate - invalid input - undercount";
+                return;
+            }
+
+            avgdailycases = document.getElementById("caseload").value;
+            if (avgdailycases < 0) {
+                document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "Cannot Calculate - invalid input - average daily cases";
+                return;
+            }
+
+            
+            contagiousdays = document.getElementById("dayscontagious").value;
+            if (contagiousdays < 0) {
+                document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "Cannot Calculate - invalid input - days contagious";
+                return;
+            }
+
+
+            var contagiouspeople = avgdailycases * R0 * contagiousdays * undercountmultiplier;
+            document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "I estimate there are " + contagiouspeople + " contagious people in your county.";
+            var probability1 = (contagiouspeople / countypop);
+            document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "That is " + (probability1*100) + "% of the population.";
+            var probability2 = 1.00 - probability1;
+            for (var q = 0; q < sizeofroom - 1; q++) {
+                probability2 = probability2 * (1.00 - probability1);
+            }
+            probability2 = 100 - (probability2 * 100);
+            probability2 = probability2 * 1000;
+            probability2 = Math.round(probability2);
+            var probability3 = probability2 / 1000;
+            document.getElementById("probabilitymessage").innerHTML = document.getElementById("probabilitymessage").innerHTML + "<br>" + "There's a " + probability3 + "% chance that someone in the room has Covid-19!";
+
+
+
+        }
+
+
+        
+
+       
+        document.getElementById("submitbutton").onclick = CalculateRisk;
+     
+
+
+    </script>
+</body>
+</html>
